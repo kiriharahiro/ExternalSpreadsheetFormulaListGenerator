@@ -1,0 +1,6 @@
+# GAS settings (contains script ID)
+.clasp.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
