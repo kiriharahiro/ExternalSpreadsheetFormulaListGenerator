@@ -31,42 +31,45 @@ function exportFormulasFromSetting() {
   }
 
   // 2. 設定値の読み込み
-  // B4が「spreadsheetId」で、C4がその値
-  const targetSpreadsheetId = String(settingSheet.getRange('C4').getValue()).trim();
-  // B6が「sheetName」で、C6がその値（レイアウト変更に対応：C5はappScriptIdになったためC6を読み込む）
+  // E4セルに対象スプレッドシートのURLが入力されている
+  const targetSpreadsheetUrl = String(settingSheet.getRange('E4').getValue()).trim();
+  // C6セルに対象シートの設定（*ALL または 個別指定）
   const targetSheetConfig = String(settingSheet.getRange('C6').getValue()).trim();
 
-  if (!targetSpreadsheetId) {
-    ui.alert('エラー', '「設定表」シートの C4 セルにスプレッドシートID（spreadsheetId）を入力してください。', ui.ButtonSet.OK);
+  if (!targetSpreadsheetUrl) {
+    ui.alert('エラー', '「設定表」シートの E4 セルにスプレッドシートのURLを入力してください。', ui.ButtonSet.OK);
     return;
   }
 
   // 3. 対象シート名の収集
-  // C6が「*ALL」の場合はすべてのシート、そうでない場合は C6以下のセルに入力されているシート名を収集
+  // C6が「*ALL」の場合はすべてのシート、そうでない場合は C7以下のセル（最終行まで）に入力されているシート名を収集
   const targetSheetNames = [];
   let isAllSheets = false;
 
   if (targetSheetConfig === '*ALL' || targetSheetConfig === '') {
     isAllSheets = true;
   } else {
-    // C6 から C16 までを取得して配列にする（レイアウト変更に対応）
-    const configValues = settingSheet.getRange('C6:C16').getValues();
-    configValues.forEach(row => {
-      const name = String(row[0]).trim();
-      if (name && name !== '*ALL') {
-        targetSheetNames.push(name);
-      }
-    });
+    // C7 から最終行までを取得して配列にする
+    const lastRow = settingSheet.getLastRow();
+    if (lastRow >= 7) {
+      const configValues = settingSheet.getRange('C7:C' + lastRow).getValues();
+      configValues.forEach(row => {
+        const name = String(row[0]).trim();
+        if (name && name !== '個別指定') {
+          targetSheetNames.push(name);
+        }
+      });
+    }
   }
 
   // 4. 外部スプレッドシートを開く
   let targetSS;
   try {
-    targetSS = SpreadsheetApp.openById(targetSpreadsheetId);
+    targetSS = SpreadsheetApp.openByUrl(targetSpreadsheetUrl);
   } catch (e) {
     ui.alert(
       '接続エラー',
-      '指定されたスプレッドシートIDを開くことができませんでした。\n\n【原因として考えられること】\n・スプレッドシートIDが間違っている\n・対象ファイルへのアクセス権限がない（共有されていない）\n・GASの初回実行時の承認で「許可」をしていない\n\n設定されているIDと共有権限をご確認ください。',
+      '指定されたスプレッドシートのURLを開くことができませんでした。\n\n【原因として考えられること】\n・URLが間違っている\n・対象ファイルへのアクセス権限がない（共有されていない）\n・GASの初回実行時の承認で「許可」をしていない\n\n設定されているURLと共有権限をご確認ください。',
       ui.ButtonSet.OK
     );
     return;
